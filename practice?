@@ -1,0 +1,42 @@
+import math
+
+class box:
+    def __init__(self, length: float, width: float, height: float):
+        self.length = length
+        self.width = width
+        self.height = height
+
+    def volume(self) -> float:
+        """Calculates the volume of the box"""
+        return self.length * self.width * self.height
+###module ended 
+    def ordered_dims(self):
+        return sorted((length, width, height), reverse=True)
+
+    def fits_inside(self, other) -> bool:  
+        """Checks whether this box would fit instead"""
+        length, width, height = self.ordered_dims
+        length2, width2, height2 = other.order_dims
+        return length <= length2 and width <= width2 and height <= height2
+
+   def select_box(self, boxes: Iterable[Self]) -> Optional[Self]:
+        """Selects the smallest box in `boxes` that this box would fit in. 
+           Returns `None` if it can't fit in any of these.
+        """
+        feas_boxes = [box for box in boxes if self.fits_inside(box)]
+        return min(feas_boxes, key=lambda box: box.volume) if feas_boxes else None
+
+    def __repr__(self) -> str:
+        return f'Box({self.l}, {self.w}, {self.h})'
+
+    box_1 = Box(25, 15, 5)
+    print(f'Box 1: {box_1}')
+    box_2 = Box(25, 20, 10)
+    print(f'Box 2: {box_2}')
+
+    print(f'Box 1 fits in Box 2?: {box_1.fits_inside(box_2)}')
+
+    print('Testing select_box...')
+    boxes = [Box(25, 15, 5), Box(25, 20, 10)]
+    print(box_1.select_box(boxes))
+    print(Box(35, 35, 20).select_box(boxes))
