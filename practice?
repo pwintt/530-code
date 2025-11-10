@@ -1,3 +1,10 @@
+import pandas as pd
+df = pd.read_csv('returns_data.csv')
+df
+
+df['volume'] = df['l'] * df['w'] * df['h']
+df
+
 import math
 
 class box:
