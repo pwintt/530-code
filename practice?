@@ -17,6 +17,8 @@ class box:
         """Calculates the volume of the box"""
         return self.length * self.width * self.height
 ###module ended 
+
+"""Maybe needed??"""
     def ordered_dims(self):
         return sorted((length, width, height), reverse=True)
 
@@ -47,3 +49,14 @@ class box:
     boxes = [Box(25, 15, 5), Box(25, 20, 10)]
     print(box_1.select_box(boxes))
     print(Box(35, 35, 20).select_box(boxes))
+
+####Ended
+
+    """sorting out all volumes to see what dimensions is needed"""
+    dims_sorted = pd.DataFrame(
+    df[['l', 'w', 'h']].values.tolist(),
+    columns=['l', 'w', 'h']
+).apply(lambda row: sorted(row, reverse=True), axis=1, result_type='expand')
+
+    df[['dim_1', 'dim_2', 'dim_3']] = dims_sorted
+    df
