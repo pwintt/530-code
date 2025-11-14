@@ -1,62 +1,77 @@
 import pandas as pd
-df = pd.read_csv('returns_data.csv')
-df
 
-df['volume'] = df['l'] * df['w'] * df['h']
-df
+    def load_data(returns_file: str, boxes_file: str):
+    returns = pd.read_csv(returns_file)
+    boxes = pd.read_csv(boxes_file)
 
-import math
+    """Add volume column to returns"""
+    returns['volume'] = returns['l'] * returns['w'] * returns['h']
+    return returns, boxes
 
-class box:
+class Box:
     def __init__(self, length: float, width: float, height: float):
         self.length = length
         self.width = width
         self.height = height
 
     def volume(self) -> float:
-        """Calculates the volume of the box"""
+        """Calculates the volume of the box."""
         return self.length * self.width * self.height
-###module ended 
 
-"""Maybe needed??"""
-    def ordered_dims(self):
-        return sorted((length, width, height), reverse=True)
+    def ordered_dims(self) -> List[float]:
+        """Returns dimensions sorted in descending order."""
+        return sorted([self.length, self.width, self.height], reverse=True)
 
-    def fits_inside(self, other) -> bool:  
-        """Checks whether this box would fit instead"""
-        length, width, height = self.ordered_dims
-        length2, width2, height2 = other.order_dims
-        return length <= length2 and width <= width2 and height <= height2
+    def fits_inside(self, other: 'Box') -> bool:
+        """Checks whether this box fits inside another box."""
+        dims_self = self.ordered_dims()
+        dims_other = other.ordered_dims()
+        return all(d_self <= d_other for d_self, d_other in zip(dims_self, dims_other))
 
-   def select_box(self, boxes: Iterable[Self]) -> Optional[Self]:
-        """Selects the smallest box in `boxes` that this box would fit in. 
-           Returns `None` if it can't fit in any of these.
-        """
-        feas_boxes = [box for box in boxes if self.fits_inside(box)]
-        return min(feas_boxes, key=lambda box: box.volume) if feas_boxes else None
+    def select_box(self, boxes: List['Box']) -> Optional['Box']:
+        """Selects the smallest box from a list that this box fits into."""
+        feasible = [b for b in boxes if self.fits_inside(b)]
+        return min(feasible, key=lambda b: b.volume()) if feasible else None
 
     def __repr__(self) -> str:
-        return f'Box({self.l}, {self.w}, {self.h})'
+        return f'Box({self.length}, {self.width}, {self.height})'
 
-    box_1 = Box(25, 15, 5)
-    print(f'Box 1: {box_1}')
-    box_2 = Box(25, 20, 10)
-    print(f'Box 2: {box_2}')
+""""Assigning the boxes""""
+    from data_loader import load_data
+    def assign_boxes(returns_df, box_objects):
+    assignments = []
+    outliers = []
 
-    print(f'Box 1 fits in Box 2?: {box_1.fits_inside(box_2)}')
+    for _, item in returns_df.iterrows():
+        for _, item in returns_df.iterrows():
+        item_box = Box(item['l'], item['w'], item['h'])
+        best_box = item_box.select_box(box_objects)
 
-    print('Testing select_box...')
-    boxes = [Box(25, 15, 5), Box(25, 20, 10)]
-    print(box_1.select_box(boxes))
-    print(Box(35, 35, 20).select_box(boxes))
+        if best_box:
+            item_vol = item_box.volume()
+            box_vol = best_box.volume()
+            void_fill = 1 - item_vol / box_vol
+            assignments.append({
+                'sku_id': item['sku_id'],
+                'box_dims': (best_box.length, best_box.width, best_box.height),
+                'void_fill_rate': round(void_fill, 4),
+                'quantity': item['quantity']
+            })
+        else:
+            outliers.append({
+                'sku_id': item['sku_id'],
+                'quantity': item['quantity']
+            })
 
-####Ended
+    return pd.DataFrame(assignments), pd.DataFrame(outliers)
 
-    """sorting out all volumes to see what dimensions is needed"""
-    dims_sorted = pd.DataFrame(
-    df[['l', 'w', 'h']].values.tolist(),
-    columns=['l', 'w', 'h']
-).apply(lambda row: sorted(row, reverse=True), axis=1, result_type='expand')
+def main():
+    returns_df, boxes_df = load_data('returns_data.csv', 'current_boxes.csv')
+    box_objects = create_box_objects(boxes_df)
+    assignments_df, outliers_df = assign_boxes(returns_df, box_objects)
 
-    df[['dim_1', 'dim_2', 'dim_3']] = dims_sorted
-    df
+    assignments_df.to_csv('box_assignments.csv', index=False)
+    outliers_df.to_csv('outliers.csv', index=False)
+
+if __name__ == "__main__":
+    main()
