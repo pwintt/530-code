@@ -1,0 +1,42 @@
+import pandas as pd
+df = pd.read_csv(r'C:\Users\swan_\Documents\课程相关\python\课程内容\returns_data.csv', index_col = 'sku_id')
+df.loc[:,'volume']= df.loc[:,'l'] * df.loc[:,'w'] * df.loc[:,'h'] / 1000000
+
+
+dim_1, dim_2, dim_3 = [],[],[]
+for sku_id, row in df.iterrows():
+    dims= sorted([row['l'], row['w'], row['h']], reverse=True)
+    dim_1.append(dims[0])
+    dim_2.append(dims[1])
+    dim_3.append(dims[2])
+df.loc[:,'dim_1'] = dim_1
+df.loc[:,'dim_2'] = dim_2
+df.loc[:,'dim_3'] = dim_3
+
+summary_df = df.describe()
+summary_df
+#read the file current_boxes 
+df_2 = pd.read_csv(r'C:\Users\swan_\Documents\课程相关\python\group work\current_boxes.csv', index_col = 'box_id')
+#make a list to store the outcome of the box 
+assigned_boxes =[]
+for sku_id, row in df.iterrows():
+    """found_box and the indentation make it iterate all box and then put'None' if cannot 
+find box that match"""
+    found_box = False
+    for box_id, b in df_2.iterrows():
+        if row['l']<=b['l'] and row['w']<=b['w'] and row['h']<=b['h']:
+            found_box = True
+            assigned_boxes.append(box_id)
+            break
+    if not found_box:
+        assigned_boxes.append(None)
+df.loc[:,'box'] = assigned_boxes
+#generate a new column of box volume in df_2
+df_2.loc[:,'box_volume'] = df_2.loc[:,'l']* df_2.loc[:,'w']*df_2.loc[:,'h']/1000000
+#put the box volume in df 
+box_volume =[]
+for sku_id, row in df.iterrows():
+    if pd.isna(row['box']):
+        box_volume.append(None)
+    else:
+        box_volume.append(df_2.loc[row['box'],'box_volume'])
