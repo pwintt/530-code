@@ -1,0 +1,56 @@
+#3D scatter plot
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+fig= plt.subplots(figsize=(10, 10))
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(df['dim_1'], df['dim_2'], df['dim_3'])
+
+ax.set_xlabel('Dimension 1')
+ax.set_ylabel('Dimension 2')
+ax.set_zlabel('Dimension 3')
+
+plt.title('3D Scatter Plot')
+plt.show()
+
+#bar chart
+group = df.groupby('box')[['dim_1','dim_2','dim_3']].mean()
+fig, ax = plt.subplots(ncols=3, sharey=True,figsize=(15, 4))
+
+ax[0].bar(group.index, group['dim_1'])
+ax[1].bar(group.index, group['dim_2'])
+ax[2].bar(group.index, group['dim_3'])
+
+names = ['Average dim_1', 'Average dim_2', 'Average dim_3']
+for i, name in enumerate(names):
+    ax[i].set_xlabel(name, fontsize=15)   
+
+ax[0].set_ylabel("Dimension", fontsize=15) 
+ax[1].set_title('Average SKU Dimensions',fontsize=20)
+
+plt.tight_layout()
+plt.show()
+
+#Histograms(dim_1,dim_2,dim_3)
+fig, ax = plt.subplots(ncols=3, sharey=True,figsize=(15, 4))
+ax[0].hist(dim_1)
+ax[1].hist(dim_2)
+ax[2].hist(dim_3)
+
+names = ['dim_1', 'dim_2', 'dim_3']
+for i, name in enumerate(names):
+    ax[i].set_xlabel(name, fontsize=15)   
+
+ax[0].set_ylabel("frequency", fontsize=15) 
+ax[1].set_title('Distribution of SKU Dimensions',fontsize=20)
+plt.tight_layout()
+plt.show()
+
+#Histograms(volume)
+fig, ax = plt.subplots()
+volume = df['l'] * df['w'] * df['h'] / 1000000
+ax.hist(volume)
+ax.set_xlabel('volume')
+ax.set_ylabel('frequency')
+ax.set_title('Distribution of volume')
+plt.show()
