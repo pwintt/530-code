@@ -1,10 +1,10 @@
 import pandas as pd
+from typing import List, Optional 
 
-    def load_data(returns_file: str, boxes_file: str):
+def load_data(returns_file: str, boxes_file: str):
     returns = pd.read_csv(returns_file)
     boxes = pd.read_csv(boxes_file)
 
-    """Add volume column to returns"""
     returns['volume'] = returns['l'] * returns['w'] * returns['h']
     return returns, boxes
 
@@ -36,14 +36,20 @@ class Box:
     def __repr__(self) -> str:
         return f'Box({self.length}, {self.width}, {self.height})'
 
-""""Assigning the boxes""""
-    from data_loader import load_data
-    def assign_boxes(returns_df, box_objects):
+# Removed: from data_loader import load_data - this was misplaced
+
+def create_box_objects(boxes_df):
+    box_objects = []
+    for _, row in boxes_df.iterrows():
+        box_objects.append(Box(row['l'], row['w'], row['h']))
+    return box_objects
+
+def assign_boxes(returns_df, box_objects):
     assignments = []
     outliers = []
 
     for _, item in returns_df.iterrows():
-        for _, item in returns_df.iterrows():
+        # Removed the inner duplicated loop and fixed indentation
         item_box = Box(item['l'], item['w'], item['h'])
         best_box = item_box.select_box(box_objects)
 
@@ -75,3 +81,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+main()
+
+##BOX ASSIGNMENTS
+assignments_df = pd.read_csv('box_assignments.csv')
+display(assignments_df.head())
+
+##Outliers
+outliers_df = pd.read_csv('outliers.csv')
+display(outliers_df.head())
