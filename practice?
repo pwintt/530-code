@@ -8,6 +8,8 @@ def load_data(returns_file: str, boxes_file: str):
     returns['volume'] = returns['l'] * returns['w'] * returns['h']
     return returns, boxes
 
+print(returns_file)
+
 class Box:
     def __init__(self, length: float, width: float, height: float):
         self.length = length
