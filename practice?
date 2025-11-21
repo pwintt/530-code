@@ -1,5 +1,8 @@
+""FIRST MODULE""
 import pandas as pd
 from typing import List, Optional 
+returns_file = r'C:\Users\iifan\OneDrive - Lancaster University\Documents\530\returns_data.csv'
+boxes_path = r'C:\Users\iifan\OneDrive - Lancaster University\Documents\530\current_boxes.csv'
 
 def load_data(returns_file: str, boxes_file: str):
     returns = pd.read_csv(returns_file)
@@ -94,7 +97,7 @@ display(assignments_df.head())
 outliers_df = pd.read_csv('outliers.csv')
 display(outliers_df.head())
 
-
+"""Second module"""
 ##BOX RE_ASSIGNMENT SCRIPT
 """Identifies items that currently cannot be assigned a box (outliers) and proposes new box dimensions to accommodate them"""
 
