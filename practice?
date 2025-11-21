@@ -10,6 +10,7 @@ def load_data(returns_file: str, boxes_file: str):
 
 print(returns_file)
 
+##Creating a box class that has the method to create a box with given measurements, calculate the box's volume, return dimensions in descending order and method to check if one box can fit inside another, method which find the smallest available box
 class Box:
     def __init__(self, length: float, width: float, height: float):
         self.length = length
@@ -38,8 +39,7 @@ class Box:
     def __repr__(self) -> str:
         return f'Box({self.length}, {self.width}, {self.height})'
 
-# Removed: from data_loader import load_data - this was misplaced
-
+##Takes a DataFrame of the box dimensions and converts each row into a Box object, returning a list of it. It repeats through each item in returns_df, creates a box object and tries to find the best box from box objects. If a box is found, it calculates the void_fill_rate (how much empty space is in the box) and adds the assignment to a it. If no suitable box is found, the item is marked as an 'outlier'.
 def create_box_objects(boxes_df):
     box_objects = []
     for _, row in boxes_df.iterrows():
@@ -93,3 +93,113 @@ display(assignments_df.head())
 ##Outliers
 outliers_df = pd.read_csv('outliers.csv')
 display(outliers_df.head())
+
+
+##BOX RE_ASSIGNMENT SCRIPT
+"""Identifies items that currently cannot be assigned a box (outliers) and proposes new box dimensions to accommodate them"""
+
+def get_max_item_dimensions(df):
+    if df.empty:
+        return 0, 0, 0
+    max_l = df['l'].max()
+    max_w = df['w'].max()
+    max_h = df['h'].max()
+    return max_l, max_w, max_h
+
+def propose_new_boxes(returns_df, current_box_objects: Optional[List[Box]] = None):
+    """ Proposes a new set of improved boxes based on returns data and current boxes. """
+    if current_box_objects is None:
+        current_box_objects = []
+
+    # Make a copy of current boxes to build upon
+    proposed_boxes = current_box_objects[:]
+
+    boxes_for_initial_eval = current_box_objects if current_box_objects else [
+        Box(max(returns_df['l'].max(), 1), max(returns_df['w'].max(), 1), max(returns_df['h'].max(), 1))
+    ]
+
+    _, outliers_df = assign_boxes(returns_df, boxes_for_initial_eval)
+
+
+    if not outliers_df.empty:
+        print(f"Found {len(outliers_df)} outlier items. Proposing new boxes for them.")
+        outlier_items = returns_df[returns_df['sku_id'].isin(outliers_df['sku_id'])]
+        for _, item in outlier_items.iterrows():
+            # Create a new box slightly larger than the item itself.
+            # Adding a 5% buffer to each dimension to ensure it FITS!.
+            new_box_l = item['l'] * 1.05
+            new_box_w = item['w'] * 1.05
+            new_box_h = item['h'] * 1.05
+            proposed_boxes.append(Box(new_box_l, new_box_w, new_box_h))
+    else:
+        print("No outliers found with current boxes. Consider other optimization strategies.")
+
+
+    unique_proposed_boxes = []
+    seen_dims = set()
+    for box in proposed_boxes:
+        dims = tuple(sorted([round(box.length, 2), round(box.width, 2), round(box.height, 2)]))
+        if dims not in seen_dims:
+            unique_proposed_boxes.append(box)
+            seen_dims.add(dims)
+
+    unique_proposed_boxes.sort(key=lambda b: b.volume())
+
+    return unique_proposed_boxes
+def main_box_improvement():
+    returns_df, boxes_df = load_data('returns_data.csv', 'current_boxes.csv')
+    current_box_objects = create_box_objects(boxes_df)
+
+    print("\n--- Initial Box Assignment Evaluation ---")
+    _, initial_outliers_df = assign_boxes(returns_df, current_box_objects)
+    if not initial_outliers_df.empty:
+        print(f"Initially, {len(initial_outliers_df)} items (SKUs: {initial_outliers_df['sku_id'].tolist()}) could not be assigned a box.")
+    else:
+        print("Initially, all items could be assigned a box.")
+
+    # Propose new boxes based on returns data and current box set
+    improved_box_objects = propose_new_boxes(returns_df, current_box_objects)
+
+    print("\n--- Proposed New Box Set ---")
+    if improved_box_objects:
+        for i, box in enumerate(improved_box_objects):
+            print(f"Box {i+1}: {box}")
+
+        #### Evaluate the new set of boxes by performing assignments again
+        print("\n--- Evaluating Assignments with Proposed Boxes ---")
+        assignments_new_df, outliers_new_df = assign_boxes(returns_df, improved_box_objects)
+
+        if not outliers_new_df.empty:
+            print(f"After proposing new boxes, {len(outliers_new_df)} items still could not be assigned. These are new outliers:")
+            display(outliers_new_df.head())
+            outliers_new_df.to_csv('new_outliers.csv', index=False)
+        else:
+            print("With the proposed boxes, all items can now be assigned!")
+
+        assignments_new_df.to_csv('improved_box_assignments.csv', index=False)
+
+        ### Convert proposed Box objects to a DataFrame.
+        new_boxes_data = [{'l': b.length, 'w': b.width, 'h': b.height} for b in improved_box_objects]
+        new_boxes_df = pd.DataFrame(new_boxes_data)
+        new_boxes_df.to_csv('proposed_boxes.csv', index=False)
+        print("\nProposed boxes saved to 'proposed_boxes.csv'.")
+        print("New assignments saved to 'improved_box_assignments.csv'.")
+    else:
+        print("No new boxes were proposed (possibly empty returns data).")
+
+main_box_improvement()
+
+"""Proposed new boxes"""
+proposed_boxes_df = pd.read_csv('proposed_boxes.csv')
+display(proposed_boxes_df.head())
+
+"""Assigned with improved new boxes"""
+improved_assignments_df = pd.read_csv('improved_box_assignments.csv')
+display(improved_assignments_df.head())
+
+"""Remaining Outliers"""
+try:
+    new_outliers_df = pd.read_csv('new_outliers.csv')
+    display(new_outliers_df.head())
+except FileNotFoundError:
+    print("No new outliers found after proposing improved boxes.")
