@@ -1,0 +1,3 @@
+Read me:
+There is two files: ('Box Selector - Part 1' and 'Dashboard - Part 2')
+For part one there are various modules to be imported, like first box assignment and box re-assignment.
