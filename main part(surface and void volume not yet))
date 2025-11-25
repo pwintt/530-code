@@ -1,0 +1,120 @@
+import pandas as pd
+import math
+from box_utils import Box, assign_boxes, calculate_outlier_rate, calculate_weighted_void_rate
+
+   # Input data files   
+box_data_fn = input("Please enter the path for current_boxes.csv: ")
+returns_data_fn = input("Please enter the path for returns_data.csv: ")
+
+try:
+    box_df = pd.read_csv(box_data_fn)
+    box_records = box_df.to_dict(orient='records') # converts data frame to a list of records
+except FileNotFoundError:
+    print(f'Box data file {box_data_fn} does not exist.')
+# Read returns data
+try:
+    returns_df = pd.read_csv(returns_data_fn)
+    returns_records = returns_df.to_dict(orient='records') # converts data frame to a list of records
+    print(f'Returns data contains {len(returns_records)} items')
+except FileNotFoundError:
+    print(f'Returns data file {returns_data_fn} does not exist.')
+    
+df = returns_df.set_index('sku_id')
+df_2 = box_df.set_index('box_id')
+
+df.loc[:,'volume']= df.loc[:,'l'] * df.loc[:,'w'] * df.loc[:,'h'] / 1000000
+
+dim_1, dim_2, dim_3 = [],[],[]
+for sku_id, row in df.iterrows():
+    dims= sorted([row['l'], row['w'], row['h']], reverse=True)
+    dim_1.append(dims[0])
+    dim_2.append(dims[1])
+    dim_3.append(dims[2])
+df.loc[:,'dim_1'] = dim_1
+df.loc[:,'dim_2'] = dim_2
+df.loc[:,'dim_3'] = dim_3
+
+#put box data into Box class
+current_boxes = []
+for box_id, row in df_2.iterrows():
+    current_boxes.append(Box(row['l'], row['w'], row['h'], box_id=box_id))
+
+#use assign_boxes to make a list to store the outcome of the box
+assigned_boxes = assign_boxes(df, current_boxes, return_index=False)
+df.loc[:,'box'] = assigned_boxes
+
+#generate a new column of box volume in df_2
+df_2.loc[:,'box_volume'] = df_2.loc[:,'l']* df_2.loc[:,'w']*df_2.loc[:,'h']/1000000
+
+#put the box volume in df 
+box_volume =[]
+for sku_id, row in df.iterrows():
+    if pd.isna(row['box']):
+        box_volume.append(None)
+    else:
+        box_volume.append(df_2.loc[row['box'],'box_volume'])
+df.loc[:,'box volume'] = box_volume
+
+#calculate void fill rate 
+void_fill_rate = []
+void_fill_rate = (df.loc[:,'box volume'] - df.loc[:,'volume'])/df.loc[:,'box volume']
+df.loc[:,'void fill rate'] =void_fill_rate
+
+#current info dashboard to check the current data 
+summary_df = df.describe() 
+
+#calculate outlier rate 
+
+
+outlier_rate = calculate_outlier_rate(df, 'box')
+print (f'current outlier rate is: {outlier_rate}')
+
+#calculate weighted average void fill rate 
+
+    
+weighted_avr_void_rate = calculate_weighted_void_rate(df, 'void fill rate', 'box')
+print (f'current weighted average void fill rate is: {weighted_avr_void_rate}')
+
+#design new range of box 
+#make a 3 side quantile df as new box and use int 
+quantiles = [0.19, 0.38, 0.57, 0.76, 0.95]
+new_box_objects = [] 
+for i, q in enumerate(quantiles): 
+    l_new = math.ceil(df['dim_1'].quantile(q))
+    w_new = math.ceil(df['dim_2'].quantile(q))
+    h_new = math.ceil(df['dim_3'].quantile(q))
+    new_box_objects.append(Box(l_new, w_new, h_new))
+max_l = math.ceil(df['dim_1'].max())
+max_w = math.ceil(df['dim_2'].max())
+max_h = math.ceil(df['dim_3'].max())
+new_box_objects.append(Box(max_l,max_w, max_h))
+new_boxes_data = []
+for b in new_box_objects:
+    new_boxes_data.append({'l': b.l, 'w': b.w, 'h': b.h, 'box_volume': b.volume()}) 
+new_boxes_df = pd.DataFrame(new_boxes_data)
+
+#check new weight avr void fill rate and outlier rate 
+new_assigned_boxes = assign_boxes(df, new_box_objects, return_index=True)
+df.loc[:,'new assigned box'] = new_assigned_boxes
+
+new_box_volume =[]
+for sku_id, row in df.iterrows():
+    if pd.isna(row['new assigned box']):
+        new_box_volume.append(None)
+    else:
+        new_box_volume.append(new_boxes_df.loc[row['new assigned box'],'box_volume'])
+df.loc[:,'new box volume'] = new_box_volume
+
+new_outlier_rate = calculate_outlier_rate(df, 'new assigned box')
+print (f'new outlier rate is: {new_outlier_rate }')
+
+#calculate new void fill rate 
+new_void_fill_rate = []
+new_void_fill_rate = (df.loc[:,'new box volume'] - df.loc[:,'volume'])/df.loc[:,'new box volume']
+df.loc[:,'new void fill rate'] = new_void_fill_rate
+
+new_weighted_avr_void_rate = calculate_weighted_void_rate(df, 'new void fill rate', 'new assigned box')
+print (f'new weighted avrerge void fill rate is: {new_weighted_avr_void_rate }')
+print (f'new boxes dimension are \n{new_boxes_df}')
+#new info dashboard to check the current data 
+summary_df_2 = df.describe() 
