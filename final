@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 24 13:06:57 2025
-
-@author: iifan
-"""
-
 # Python module: dataloading.py
 """
 This module contains a function for inputting the returns data and current boxes csv.
@@ -44,10 +37,7 @@ try:
 except FileNotFoundError:
     print(f'Returns data file {returns_data_fn} does not exist.')
 
-# Python module: current.py
-"""
-This module contains a function for assigning the current boxes
-"""
+    #module ends
     
 df = returns_df.set_index('sku_id')
 df_2 = box_df.set_index('box_id')
@@ -81,8 +71,6 @@ for sku_id, row in df.iterrows():
     if not found_box:
         assigned_boxes.append(None)
 df.loc[:,'box'] = assigned_boxes
-
-#current.py module stops here 
 
 #generate a new column of box volume in df_2
 df_2.loc[:,'box_volume'] = df_2.loc[:,'l']* df_2.loc[:,'w']*df_2.loc[:,'h']/1000000
@@ -137,6 +125,8 @@ weighted_avr_void_rate_df = df.loc[:,'quantity'] * df.loc[:,'void fill rate'] /f
 weighted_avr_void_rate = weighted_avr_void_rate_df.sum(numeric_only = True)
 print (f'current weighted average void fill rate is: {weighted_avr_void_rate}')
 
+
+# Python module: new rang of box
 #design new range of box 
 #make a 3 side quantile df as new box and use int 
 quantiles = [0.19, 0.38, 0.57, 0.76, 0.95]
@@ -154,6 +144,8 @@ new_boxes_data = []
 for b in new_box_objects:
     new_boxes_data.append({'l': b.l, 'w': b.w, 'h': b.h, 'box_volume': b.volume()}) 
 new_boxes_df = pd.DataFrame(new_boxes_data)
+
+#module ends
 
 #check new weight avr void fill rate and outlier rate 
 new_assigned_boxes =[]
