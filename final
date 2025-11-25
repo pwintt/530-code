@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Nov 24 13:06:57 2025
+
+@author: iifan
+"""
+
+# Python module: dataloading.py
+"""
+This module contains a function for inputting the returns data and current boxes csv.
+"""
 import pandas as pd
 import math
 class Box:
@@ -32,6 +43,11 @@ try:
     print(f'Returns data contains {len(returns_records)} items')
 except FileNotFoundError:
     print(f'Returns data file {returns_data_fn} does not exist.')
+
+# Python module: current.py
+"""
+This module contains a function for assigning the current boxes
+"""
     
 df = returns_df.set_index('sku_id')
 df_2 = box_df.set_index('box_id')
@@ -66,6 +82,8 @@ for sku_id, row in df.iterrows():
         assigned_boxes.append(None)
 df.loc[:,'box'] = assigned_boxes
 
+#current.py module stops here 
+
 #generate a new column of box volume in df_2
 df_2.loc[:,'box_volume'] = df_2.loc[:,'l']* df_2.loc[:,'w']*df_2.loc[:,'h']/1000000
 
@@ -94,8 +112,8 @@ void_fill_rate = []
 void_fill_rate = (df.loc[:,'box volume'] - df.loc[:,'volume'])/df.loc[:,'box volume']
 df.loc[:,'void fill rate'] =void_fill_rate
 
-# Display the new KPI columns
-print("\nNewly calculated KPIs:") 
+# Display the KPI columns
+print("\n Calculated KPIs:") 
 display(df[['box volume', 'box surface area', 'void fill volume', 'void fill rate']].head())
 
 #current info dashboard to check the current data 
